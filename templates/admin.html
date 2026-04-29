@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FixMate Admin</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+            font-family: Arial, sans-serif;
+            padding: 30px;
+        }
+
+        h1 { color: #10a37f; margin-bottom: 5px; }
+        h2 { margin: 30px 0 15px; color: #ccc; font-size: 18px; }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 15px;
+        }
+
+        /* Login form */
+        .login-box {
+            max-width: 380px;
+            margin: 100px auto;
+            background: #2f2f2f;
+            border: 1px solid #444;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .login-box h1 { margin-bottom: 8px; }
+        .login-box p  { color: #888; margin-bottom: 25px; }
+
+        .error-msg {
+            background: #5c1a1a;
+            color: #ff6b6b;
+            border: 1px solid #ff4444;
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        /* Form inputs */
+        input[type="text"],
+        input[type="password"],
+        textarea {
+            width: 100%;
+            padding: 10px 14px;
+            background: #1a1a1a;
+            border: 1px solid #444;
+            border-radius: 8px;
+            color: #e0e0e0;
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+
+        textarea { resize: vertical; min-height: 80px; font-family: Arial, sans-serif; }
+
+        input[type="text"]:focus,
+        input[type="password"]:focus,
+        textarea:focus { outline: none; border-color: #10a37f; }
+
+        label { display: block; font-size: 13px; color: #aaa; margin-bottom: 4px; }
+
+        /* Buttons */
+        .btn {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .btn-green  { background: #10a37f; color: white; }
+        .btn-green:hover  { background: #0d8c6d; }
+        .btn-red    { background: #c0392b; color: white; }
+        .btn-red:hover    { background: #a93226; }
+        .btn-blue   { background: #2980b9; color: white; }
+        .btn-blue:hover   { background: #2471a3; }
+        .btn-grey   { background: #444; color: #ccc; }
+        .btn-grey:hover   { background: #555; }
+
+        /* Search bar */
+        .search-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .search-row input {
+            margin-bottom: 0;
+            max-width: 320px;
+        }
+
+        .search-count {
+            font-size: 13px;
+            color: #888;
+        }
+
+        /* Error codes table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #2f2f2f;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        th {
+            background: #10a37f;
+            color: white;
+            padding: 12px 15px;
+            text-align: left;
+            font-size: 13px;
+        }
+
+        th.sortable {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        th.sortable:hover { background: #0d8c6d; }
+
+        th.sortable::after {
+            content: ' ↕';
+            font-size: 11px;
+            opacity: 0.6;
+        }
+
+        th.sort-asc::after  { content: ' ↑'; opacity: 1; }
+        th.sort-desc::after { content: ' ↓'; opacity: 1; }
+
+        td {
+            padding: 11px 15px;
+            border-bottom: 1px solid #3a3a3a;
+            font-size: 13px;
+            vertical-align: top;
+        }
+
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: #363636; }
+
+        tr.hidden-row { display: none; }
+
+        .solution-cell {
+            max-width: 350px;
+            white-space: pre-wrap;
+            font-size: 12px;
+            color: #aaa;
+        }
+
+        .actions { display: flex; gap: 8px; }
+
+        /* Add / edit form */
+        .form-box {
+            background: #2f2f2f;
+            border: 1px solid #444;
+            border-radius: 10px;
+            padding: 25px;
+        }
+
+        .form-row { margin-bottom: 14px; }
+
+        .form-top-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 14px;
+        }
+
+        .form-top-row .form-field { flex: 1; }
+
+        .form-actions { display: flex; gap: 10px; margin-top: 5px; }
+
+        /* Unresolved logs */
+        .log-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .log-empty {
+            background: #2f2f2f;
+            border: 1px solid #444;
+            border-radius: 10px;
+            padding: 20px;
+            color: #888;
+            font-size: 13px;
+            text-align: center;
+        }
+
+        .log-table th { background: #b7770d; }
+        .log-table th.sortable:hover { background: #9a650b; }
+    </style>
+</head>
+<body>
+
+{% if not logged_in %}
+
+    {# Login page #}
+    <div class="login-box">
+        <h1>FixMate</h1>
+        <p>Admin Panel - please log in</p>
+
+        {% if error %}
+            <div class="error-msg">{{ error }}</div>
+        {% endif %}
+
+        <form method="POST" action="/admin/login">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" placeholder="Enter admin password" required>
+            <button type="submit" class="btn btn-green" style="width:100%">Log In</button>
+        </form>
+    </div>
+
+{% elif edit_row is defined and edit_row %}
+
+    {# Edit page #}
+    <div class="header">
+        <h1>FixMate Admin - Edit Error Code</h1>
+        <a href="/admin"><button class="btn btn-grey">Cancel</button></a>
+    </div>
+
+    <div class="form-box">
+        <form method="POST" action="/admin/edit/{{ edit_row[0] }}">
+            <div class="form-row">
+                <label>Error Code</label>
+                <input type="text" name="code" value="{{ edit_row[1] }}" required>
+            </div>
+            <div class="form-row">
+                <label>Error Name</label>
+                <input type="text" name="name" value="{{ edit_row[2] }}" required>
+            </div>
+            <div class="form-row">
+                <label>Brand</label>
+                <input type="text" name="brand" value="{{ edit_row[3] }}" required>
+            </div>
+            <div class="form-row">
+                <label>Solution (one step per line)</label>
+                <textarea name="solution" rows="6" required>{{ edit_row[4] }}</textarea>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-green">Save Changes</button>
+                <a href="/admin"><button type="button" class="btn btn-grey">Cancel</button></a>
+            </div>
+        </form>
+    </div>
+
+{% else %}
+
+    {# Main admin panel #}
+    <div class="header">
+        <h1>FixMate Admin Panel</h1>
+        <form method="POST" action="/admin/logout">
+            <button type="submit" class="btn btn-grey">Log Out</button>
+        </form>
+    </div>
+
+    {# Add new error code #}
+    <h2>Add New Error Code</h2>
+    <div class="form-box">
+        <form method="POST" action="/admin/add">
+            <div class="form-top-row">
+                <div class="form-field">
+                    <label>Error Code</label>
+                    <input type="text" name="code" placeholder="e.g. 0x80070005" required>
+                </div>
+                <div class="form-field">
+                    <label>Error Name</label>
+                    <input type="text" name="name" placeholder="e.g. Access Denied" required>
+                </div>
+                <div class="form-field">
+                    <label>Brand</label>
+                    <input type="text" name="brand" placeholder="e.g. Windows, HP, Dell" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <label>Solution (one step per line)</label>
+                <textarea name="solution" placeholder="1. Step one&#10;2. Step two&#10;3. Step three" required></textarea>
+            </div>
+            <button type="submit" class="btn btn-green">Add Error Code</button>
+        </form>
+    </div>
+
+    {# Error codes table #}
+    <h2>All Error Codes ({{ rows|length }} total)</h2>
+
+    {# Search bar #}
+    <div class="search-row">
+        <input type="text" id="searchInput" placeholder="Search by code, name or brand..."
+               oninput="filterTable()" style="margin-bottom:0;">
+        <span class="search-count" id="searchCount"></span>
+    </div>
+
+    <table id="errorTable">
+        <thead>
+            <tr>
+                <th class="sortable" onclick="sortTable(this, 0)">ID</th>
+                <th>Code</th>
+                <th class="sortable" onclick="sortTable(this, 2)">Name</th>
+                <th class="sortable" onclick="sortTable(this, 3)">Brand</th>
+                <th>Solution</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="errorTableBody">
+            {% for row in rows %}
+            <tr>
+                <td>{{ row[0] }}</td>
+                <td>{{ row[1] }}</td>
+                <td>{{ row[2] }}</td>
+                <td>{{ row[3] }}</td>
+                <td class="solution-cell">{{ row[4] }}</td>
+                <td>
+                    <div class="actions">
+                        <a href="/admin/edit/{{ row[0] }}">
+                            <button class="btn btn-blue">Edit</button>
+                        </a>
+                        <form method="POST" action="/admin/delete/{{ row[0] }}"
+                              onsubmit="return confirm('Delete this error code?')">
+                            <button type="submit" class="btn btn-red">Delete</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {# Unresolved issues log #}
+    <div class="log-header" style="margin-top: 50px;">
+        <h2 style="margin: 0;">Unresolved Issues Log ({{ logs|length }} entries)</h2>
+        {% if logs %}
+        <form method="POST" action="/admin/clear_log"
+              onsubmit="return confirm('Clear all unresolved log entries?')">
+            <button type="submit" class="btn btn-red">Clear All</button>
+        </form>
+        {% endif %}
+    </div>
+
+    <p style="color:#888; font-size:13px; margin-bottom:15px;">
+        These are error codes users typed that were not found in the database.
+        Use this to identify gaps in your database and add missing codes above.
+    </p>
+
+    {% if logs %}
+    <table class="log-table">
+        <thead>
+            <tr>
+                <th class="sortable" onclick="sortTable(this, 0, 'logTableBody')">ID</th>
+                <th class="sortable" onclick="sortTable(this, 1, 'logTableBody')">Code Attempted</th>
+                <th class="sortable" onclick="sortTable(this, 2, 'logTableBody')">Brand</th>
+                <th class="sortable" onclick="sortTable(this, 3, 'logTableBody')">Timestamp</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody id="logTableBody">
+            {% for log in logs %}
+            <tr>
+                <td>{{ log[0] }}</td>
+                <td>{{ log[1] }}</td>
+                <td>{{ log[2] }}</td>
+                <td>{{ log[3] }}</td>
+                <td>
+                    <form method="POST" action="/admin/delete_log/{{ log[0] }}"
+                          onsubmit="return confirm('Delete this log entry?')">
+                        <button type="submit" class="btn btn-red">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="log-empty">No unresolved issues logged yet - great!</div>
+    {% endif %}
+
+{% endif %}
+
+<script>
+
+    // Search filter
+    function filterTable() {
+        var input = document.getElementById('searchInput').value.toLowerCase().trim();
+
+        var tbody = document.getElementById('errorTableBody');
+        var rows = tbody.querySelectorAll('tr');
+        var visibleCount = 0;
+
+        rows.forEach(function(row) {
+            var code  = row.querySelectorAll('td')[1].textContent.toLowerCase();
+            var name  = row.querySelectorAll('td')[2].textContent.toLowerCase();
+            var brand = row.querySelectorAll('td')[3].textContent.toLowerCase();
+
+            var matches = code.includes(input) || name.includes(input) || brand.includes(input);
+
+            if (matches) {
+                row.classList.remove('hidden-row');
+                visibleCount++;
+            } else {
+                row.classList.add('hidden-row');
+            }
+        });
+
+        var countEl = document.getElementById('searchCount');
+        if (input === '') {
+            countEl.textContent = '';
+        } else {
+            countEl.textContent = visibleCount + ' result' + (visibleCount !== 1 ? 's' : '');
+        }
+    }
+
+    // Sort table
+    function sortTable(header, columnIndex, tbodyId) {
+        tbodyId = tbodyId || 'errorTableBody';
+        var tbody = document.getElementById(tbodyId);
+        var rows  = Array.from(tbody.querySelectorAll('tr'));
+
+        var ascending = !header.classList.contains('sort-asc');
+
+        var table = header.closest('table');
+        table.querySelectorAll('th.sortable').forEach(function(th) {
+            th.classList.remove('sort-asc', 'sort-desc');
+        });
+
+        header.classList.add(ascending ? 'sort-asc' : 'sort-desc');
+
+        rows.sort(function(rowA, rowB) {
+            var cellA = rowA.querySelectorAll('td')[columnIndex].textContent.trim().toLowerCase();
+            var cellB = rowB.querySelectorAll('td')[columnIndex].textContent.trim().toLowerCase();
+            if (cellA < cellB) return ascending ? -1 : 1;
+            if (cellA > cellB) return ascending ? 1 : -1;
+            return 0;
+        });
+
+        rows.forEach(function(row) { tbody.appendChild(row); });
+    }
+
+</script>
+
+</body>
+</html>
